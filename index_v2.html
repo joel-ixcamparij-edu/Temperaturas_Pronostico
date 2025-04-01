@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Afiches de Temperatura</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      display: flex;
+      background-color: #222;
+      color: #000;
+    }
+
+    .sidebar {
+      width: 300px;
+      background-color: #f4f4f4;
+      padding: 1rem;
+    }
+
+    .canvas-container {
+      flex-grow: 1;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      overflow: auto;
+      padding: 1rem;
+    }
+
+    canvas {
+      background: url('1.png') no-repeat center center;
+      background-size: cover;
+    }
+
+    select, input, textarea {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h3>Afiches de Temperatura</h3>
+    <label>Selecciona afiche:
+      <select id="afiche">
+        <option value="1">Afiche 1</option>
+        <option value="2">Afiche 2</option>
+        <option value="3">Afiche 3</option>
+        <option value="4">Afiche 4</option>
+      </select>
+    </label>
+    <label>Fecha:
+      <input type="date" id="fecha" />
+    </label>
+    <label>Texto del pronóstico:
+      <textarea id="textoPronostico" rows="4">Descenso de la presión atmosférica. Áreas con neblina al amanecer en zonas de montaña.</textarea>
+    </label>
+
+    <div id="controles"></div>
+
+    <button onclick="generar()">Generar</button>
+    <button onclick="exportarPNG()">Exportar PNG</button>
+  </div>
+
+  <div class="canvas-container">
+    <canvas id="preview" width="1366" height="768"></canvas>
+  </div>
+
+  <script>
+    const estaciones = {
+      1: [
+        ["GUATEMALA", "GUATEMALA"],
+        ["SUIZA CONTENTA", "SACATEPÉQUEZ"],
+        ["CUBULCO", "BAJA VERAPAZ"],
+        ["ALAMEDA ICTA", "CHIMALTENANGO"],
+        ["SAN PEDRO SAC.", "SAN MARCOS"],
+        ["HUEHUETENANGO", "HUEHUETENANGO"],
+        ["LABOR OVALLE", "QUETZALTENANGO"],
+        ["TODOS SANTOS", "HUEHUETENANGO"]
+      ],
+      2: [
+        ["FLORES", "PETÉN"],
+        ["POPTÚN", "PETÉN"],
+        ["BETHEL", "PETÉN"],
+        ["SAN PEDRO MACTÚN", "PETÉN"],
+        ["ASUNCIÓN MITA", "JUTIAPA"],
+        ["ESQUIPULAS", "CHIQUIMULA"],
+        ["LA FRAGUA", "ZACAPA"]
+      ],
+      3: [
+        ["NEBAJ", "QUICHÉ"],
+        ["COBÁN", "ALTA VERAPAZ"],
+        ["CAHABÓN", "ALTA VERAPAZ"],
+        ["PANZÓS", "ALTA VERAPAZ"],
+        ["PTO. BARRIOS", "IZABAL"],
+        ["MARISCOS", "IZABAL"],
+        ["LAS VEGAS", "IZABAL"]
+      ],
+      4: [
+        ["SABANA GRANDE", "ESCUINTLA"],
+        ["MAZATENANGO", "SUCHITEPÉQUEZ"],
+        ["CATARINA", "SAN MARCOS"],
+        ["SANTIAGO ATITLÁN", "SOLOLÁ"],
+        ["CHAMPERICO", "RETALHULEU"],
+        ["RETALHULEU", "RETALHULEU"],
+        ["PTO. SAN JOSÉ", "ESCUINTLA"],
+        ["MONTUFAR", "JUTIAPA"]
+      ]
+    };
+
+    const grados = Array.from({length: 61}, (_, i) => i - 10);
+
+    function init() {
+      const cont = document.getElementById("controles");
+      cont.innerHTML = "";
+      const grupo = estaciones[document.getElementById("afiche").value];
+      grupo.forEach(([ciudad, depto], i) => {
+        cont.innerHTML += `
+          <b>${ciudad}, ${depto}</b><br>
+          <div style="display: flex; justify-content: space-between; gap: 10px;">
+            <label style="flex: 1;">Mín:
+              <select id="min${i}" style="width: 100%">${grados.map(g => `<option>${g}°</option>`).join('')}</select>
+            </label>
+            <label style="flex: 1;">Máx:
+              <select id="max${i}" style="width: 100%">${grados.map(g => `<option>${g}°</option>`).join('')}</select>
+            </label>
+          </div>
+          <br>
+        `;
+      });
+    }
+
+    function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+      const words = text.split(' ');
+      let line = '';
+      for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + ' ';
+        const metrics = ctx.measureText(testLine);
+        if (metrics.width > maxWidth && n > 0) {
+          ctx.fillText(line, x, y);
+          line = words[n] + ' ';
+          y += lineHeight;
+        } else {
+          line = testLine;
+        }
+      }
+      ctx.fillText(line, x, y);
+    }
+
+    function generar() {
+      const canvas = document.getElementById("preview");
+      const ctx = canvas.getContext("2d");
+      const bg = new Image();
+      bg.src = "1v2.png";
+      bg.onload = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
+
+        const grupo = estaciones[document.getElementById("afiche").value];
+        const fechaInput = document.getElementById("fecha");
+        let fecha;
+        if (fechaInput.value) {
+          const [year, month, day] = fechaInput.value.split('-');
+          fecha = new Date(year, month - 1, day);
+        } else {
+          fecha = new Date();
+        }
+
+        const texto = document.getElementById("textoPronostico").value;
+
+        ctx.font = "bold 40px sans-serif";
+        ctx.fillStyle = "#f5b324";
+        ctx.textAlign = "left";
+        ctx.fillText(
+          fecha.toLocaleDateString("es-ES", {
+            year: "numeric",
+            month: "long",
+            day: "2-digit"
+          }).toUpperCase(),
+          260,
+          115
+        );
+
+        ctx.font = "bold 18px sans-serif";
+        ctx.fillStyle = "#f5b324";
+        ctx.fillText("MIN.", 500, 165);
+        ctx.fillText("MAX.", 680, 165);
+
+        let y = 210;
+        grupo.forEach(([ciudad, depto], i) => {
+          const min = document.getElementById(`min${i}`).value;
+          const max = document.getElementById(`max${i}`).value;
+
+          ctx.fillStyle = "white";
+          ctx.font = "bold 22px sans-serif";
+          ctx.fillText(ciudad, 250, y);
+          ctx.font = "italic 18px sans-serif";
+          ctx.fillText(depto, 250, y + 20);
+          ctx.font = "bold 22px sans-serif";
+          ctx.fillText(min, 500, y);
+          ctx.fillText(max, 680, y);
+
+          y += 60;
+        });
+
+        ctx.font = "bold 16px sans-serif";
+        ctx.fillStyle = "#f5b324";
+        ctx.textAlign = "left";
+        ctx.fillText("CONDICIONES Y PERSPECTIVA:", 1010, 250);
+
+        ctx.font = "18px sans-serif";
+        ctx.fillStyle = "white";
+        ctx.textAlign = "center";
+        wrapText(ctx, texto, 1140, 280, 300, 28);
+        ctx.textAlign = "left";
+      };
+    }
+
+    function exportarPNG() {
+      const canvas = document.getElementById("preview");
+      const link = document.createElement("a");
+      link.download = "afiche_temperatura.png";
+      link.href = canvas.toDataURL();
+      link.click();
+    }
+
+    document.getElementById("afiche").addEventListener("change", init);
+    window.onload = () => {
+      const today = new Date();
+      const dateStr = today.toISOString().split('T')[0];
+      document.getElementById("fecha").value = dateStr;
+      init();
+      generar();
+    };
+  </script>
+</body>
+</html>
