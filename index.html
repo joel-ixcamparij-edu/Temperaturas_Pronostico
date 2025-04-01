@@ -182,7 +182,7 @@
       nombresActuales.forEach((lugar, idx) => {
         const div = document.createElement("div");
         div.className = "fila";
-        div.innerHTML = `<label>${lugar}</label> Mín: <select id="min${idx}">${generarOpciones(5, 30)}</select> Máx: <select id="max${idx}">${generarOpciones(15, 42)}</select>`;
+        div.innerHTML = `<label>${lugar}</label> Mín: <select id="min${idx}">${generarOpciones(-2, 30)}</select> Máx: <select id="max${idx}">${generarOpciones(5, 46)}</select>`;
         formulario.appendChild(div);
       });
     }
