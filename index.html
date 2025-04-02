@@ -135,7 +135,6 @@
         </div>
         <div style="margin-top: 10px;">
           <button onclick="generar()">Generar</button>
-          <button onclick="exportarPDF()">Exportar PDF</button>
           <button onclick="exportarPNG()">Exportar PNG</button>
         </div>
       </div>
@@ -146,7 +145,6 @@
     </div>
   </div>
 
-  <script src="html2pdf.bundle.min.js"></script>
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <script>
     const nombresMapa1 = [
@@ -206,7 +204,8 @@
       if (mostrarFecha && fechaInput) {
         const fecha = document.createElement("p");
         fecha.className = "fecha";
-        const fechaFormateada = new Date(fechaInput).toLocaleDateString('es-GT', {
+        const partes = fechaInput.split("-");
+        const fechaFormateada = new Date(`${partes[0]}-${partes[1]}-${partes[2]}T00:00`).toLocaleDateString('es-GT', {
           year: 'numeric', month: 'long', day: 'numeric'
         });
         fecha.textContent = `Fecha: ${fechaFormateada}`;
@@ -231,17 +230,6 @@
       });
     }
 
-    function exportarPDF() {
-      const canvasElem = document.getElementById("canvas");
-      html2pdf().set({
-        margin: 0,
-        filename: 'reporte_temperaturas.pdf',
-        image: { type: 'jpeg', quality: 1 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'px', format: [768, 1365], orientation: 'portrait' }
-      }).from(canvasElem).save();
-    }
-
     function exportarPNG() {
       const canvasElem = document.getElementById("canvas");
       html2canvas(canvasElem, { scale: 2, useCORS: true }).then(canvas => {
@@ -254,8 +242,10 @@
 
     document.addEventListener("DOMContentLoaded", () => {
       const hoy = new Date();
-      const fechaLocal = new Date(hoy.getTime() - hoy.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-      document.getElementById("fechaSeleccionada").value = fechaLocal;
+      const yyyy = hoy.getFullYear();
+      const mm = String(hoy.getMonth() + 1).padStart(2, '0');
+      const dd = String(hoy.getDate()).padStart(2, '0');
+      document.getElementById("fechaSeleccionada").value = `${yyyy}-${mm}-${dd}`;
       cambiarMapa();
     });
   </script>
