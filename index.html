@@ -253,8 +253,9 @@
     }
 
     document.addEventListener("DOMContentLoaded", () => {
-      const hoy = new Date().toISOString().split('T')[0];
-      document.getElementById("fechaSeleccionada").value = hoy;
+      const hoy = new Date();
+      const fechaLocal = new Date(hoy.getTime() - hoy.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+      document.getElementById("fechaSeleccionada").value = fechaLocal;
       cambiarMapa();
     });
   </script>
